@@ -40,7 +40,7 @@ const App = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [msg, setMsg] = useState('');
-  // const [url, setUrl] = useState('http://192.168.1.152:3000');
+  // const [url, setUrl] = useState('http://localhost:3000');
   const [url, setUrl] = useState('https://www.yennegamovie.com');
   const [showCSaveModal, setShowCSaveModal] = useState(false);
   const [credentials, setCredentials] = useState(false);
@@ -169,7 +169,7 @@ window.webViewBridge.send('Pay', window.location.href, function(res) {
       console.log(value);
       var a = JSON.parse(value);
       if (a.uname) {
-        // var url = 'http://192.168.1.152:3000/login?uname=' + a.uname + '&password=' + a.password;
+        // var url = 'http://localhost:3000/login?uname=' + a.uname + '&password=' + a.password;
         var url = 'https://www.yennegamovie.com/login?uname='+a.uname+'&password='+a.password;
         setUrl(url);
       }
@@ -276,7 +276,7 @@ window.webViewBridge.send('Pay', window.location.href, function(res) {
 
   return (
     <>
-    <DoubleTapToClose webview={webview} />
+    <SafeAreaView><DoubleTapToClose webview={webview} /></SafeAreaView>
       {!isLoading ? (
         <WebView
           source={{ uri: url }}
