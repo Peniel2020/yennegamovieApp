@@ -1,6 +1,6 @@
 {
   "name": "yennegamovie",
-  "version": "1.0.0",
+  "version": "1.7.0",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
@@ -14,9 +14,27 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@miblanchard/react-native-slider": "^2.1.0",
+    "@react-native-community/progress-bar-android": "^1.0.4",
+    "@react-navigation/native": "^6.0.6",
+    "@react-navigation/stack": "^6.0.11",
+    "axios": "^0.24.0",
     "react": "17.0.1",
-    "react-native": "0.64.1",
+    "react-native": "npm:react-native-tvos@^0.68.2-1",
+    "react-native-device-info": "^8.0.6",
+    "react-native-gesture-handler": "^2.1.0",
+    "react-native-linear-gradient": "^2.5.6",
+    "react-native-material-menu": "^2.0.0",
     "react-native-picker-select": "^8.0.4",
+    "react-native-progress": "^5.0.0",
+    "react-native-qrcode-svg": "^6.1.2",
+    "react-native-safe-area-context": "^3.3.2",
+    "react-native-screens": "^3.10.1",
+    "react-native-svg": "^9.5.1",
+    "react-native-tvfocus": "^0.2.0",
+    "react-native-vector-icons": "^8.0.0",
+    "react-native-video": "^5.2.0",
+    "react-native-video-controls": "^2.8.1",
     "react-native-webview": "^11.15.0",
     "rn-secure-storage": "^2.0.7"
   },

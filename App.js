@@ -33,197 +33,142 @@ import {
 
 import { WebView } from 'react-native-webview';
 import RNSecureStorage, { ACCESSIBLE } from 'rn-secure-storage';
-// import { TVEventHandler, useTVEventHandler } from 'react-native';
-import DoubleTapToClose  from './exitApp';
+import TVEventHandler from 'react-native/Libraries/Components/AppleTV/TVEventHandler';
+import DoubleTapToClose from './exitApp';
+import api from './utils/api';
+import Home from './views/Home';
+import Details from './views/Details';
+import Login from './views/Login';
+import VideoPlayer from './components/player/player';
+import ReactVideoPlayer from './components/player/player2';
+import { FocusContext, Button } from 'react-native-tvfocus';
+import { NavigationContainer, useIsFocused } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import { getUniqueId, getManufacturer, getMacAddress, getDeviceId } from 'react-native-device-info';
+
+const Stack = createStackNavigator();
 
 const App = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [msg, setMsg] = useState('');
-  // const [url, setUrl] = useState('http://localhost:3000');
-  const [url, setUrl] = useState('https://www.yennegamovie.com');
+  const [userId, setUserId] = useState('https://www.yennegamovie.com');
   const [showCSaveModal, setShowCSaveModal] = useState(false);
   const [credentials, setCredentials] = useState(false);
   const [isTV, setIsTV] = useState(null);
   const [selectedDevice, setSelectedDevice] = useState(null);
-  const [devices, setDevices] = useState([{type: 'Andoid Phone', value: 0}, {type: 'Andoid TV', value: 1}, {type: 'Roku TV', value: 2}]);
-  const [_tvEventHandler, set_tvEventHandler] = useState(null);
+  const [devices, setDevices] = useState([{ type: 'Andoid Phone', value: 0 }, { type: 'Andoid TV', value: 1 }, { type: 'Roku TV', value: 2 }]);
+  // const [_tvEventHandler, set_tvEventHandler] = useState(null);
   const [SCRIPT, setSCRIPT] = useState(null);
-  const [webview, setWebview] = useState(null);
+  const [user, setUser] = useState(null);
+  const [allMedia, setAllMedia] = useState([]);
+  const [subscriptionMedia, setSubscriptionMedia] = useState([]);
+  const [romanceMedia, setRomanceMedia] = useState([]);
+  const [comedyMedia, setComedyMedia] = useState([]);
+  const [actionMedia, setActionMedia] = useState([]);
+  const [dramaMedia, setDramaMedia] = useState([]);
+  const [mysteryMedia, setMysteryMedia] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState(false);
+  const [deviceID, setdeviceID] = useState(null);
+  const [tempDeviceID, setTempDeviceID] = useState(null);
+  const [videoUrl, setVideoUrl] = useState(null);
 
-
-  // let webview = null;
-
+  
   useEffect(() => {
     setIsTV(Platform.isTV);
-    setSCRIPT(`
-var promiseChain = Promise.resolve();
-
-var callbacks = {};
-
-var init = function() {
-
-      // alert("Injected");
-      
-  const guid = function() {
-    function s4() {
-      return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
-    }
-    return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
-  }
-
-  window.isTV=${Platform.isTV}
-
-  window.webViewBridge = {
-    /**
-     * send message to the React-Native WebView onMessage handler
-     * @param targetFunc - name of the function to invoke on the React-Native side
-     * @param data - data to pass
-     * @param success - success callback
-     * @param error - error callback
-     */
-    send: function(targetFunc, data, success, error) {
-
-      var msgObj = {
-        targetFunc: targetFunc,
-        data: data || {}
-      };
-
-      if (success || error) {
-        msgObj.msgId = guid();
-      }
-
-      var msg = JSON.stringify(msgObj);
-
-      promiseChain = promiseChain.then(function () {
-        return new Promise(function (resolve, reject) {
-          console.log("sending message " + msgObj.targetFunc);
-
-          if (msgObj.msgId) {
-            callbacks[msgObj.msgId] = {
-              onsuccess: success,
-              onerror: error
-            };
-          }
-
-          window.ReactNativeWebView.postMessage(msg);
-
-          resolve();
-        })
-      }).catch(function (e) {
-        console.error('rnBridge send failed ' + e.message);
-      });
-    },
-    isTV: ${Platform.isTV},
-
-  };
-
-  window.addEventListener('message', function(e) {
-    console.log("message received from react native");
-
-    var message;
-    try {
-      message = JSON.parse(e.data)
-    }
-    catch(err) {
-      console.error("failed to parse message from react-native " + err);
-      return;
-    }
-
-    //trigger callback
-    if (message.args && callbacks[message.msgId]) {
-      if (message.isSuccessfull) {
-        callbacks[message.msgId].onsuccess(message.args);
-      }
-      else {
-        callbacks[message.msgId].onerror(nmessage.args);
-      }
-      delete callbacks[message.msgId];
-    }
-
-  });
-};
-
-init();
-window.webViewBridge.send('Pay', window.location.href, function(res) {
-  //localStorage.setItem("payLink", window.location.href);
-  console.log("Pay detection sent: ", window.location.href);
-}, function(err) {
-  console.log("Pay Detection failed: ", err);
-  //localStorage.setItem("payErr: ", err);
-});
-  window.counter = 0;
-  window.addEventListener('locationchange', function(){
-      if(window.location.href.indexOf('pay') > -1){
-          window.webViewBridge.send('Pay', window.location.href, function(res) {
-              //localStorage.setItem("payLink", window.location.href);
-              console.log("Pay detection sent: ", window.location.href);
-          }, function(err) {
-              console.log("Pay Detection failed: ", err);
-              //localStorage.setItem("payErr: ", err);
-          });
-      }
-  })
-`);
-    RNSecureStorage.get("uc").then((value) => {
-      console.log(value);
-      var a = JSON.parse(value);
-      if (a.uname) {
-        // var url = 'http://localhost:3000/login?uname=' + a.uname + '&password=' + a.password;
-        var url = 'https://www.yennegamovie.com/login?uname='+a.uname+'&password='+a.password;
-        setUrl(url);
-      }
-
-      console.log('here-----------------:', url);
-      setIsLoading(false);
-    }).catch((err) => {
-      console.log("error: *********** ", err);
-      setIsLoading(false);
-      // this.setState({ msg: 'Would you like to store you Credentials on this device?'}, ()=>{
-      //   this.setState({ showCSaveModal: true });
-      // });
-    });
-    // _enableTVEventHandler()
+    // RNSecureStorage.remove('deviceID').then((val) => {
+    //   console.log("uc Deleted: ", val)
+    // }).catch((err) => {
+    //   console.log("unable to delete: ", err)
+    // });
+    getDeviceId();
+    getDeviceInfo();
+    getMovieList();
+    _enableTVEventHandler();
+    return () => _disableTVEventHandler();
   }, [])
 
-  const myTVEventHandler = evt => {
-    setLastEventType(evt.eventType);
+  const _tvEventHandler = new TVEventHandler();
+
+  const _enableTVEventHandler = () => {
+    _tvEventHandler.enable(this, function (cmp, evt) {
+      // console.log('evt.eventType: ', evt.eventType);
+      if (evt && evt.eventType === 'right') {
+        // console.log(evt);
+      } else if (evt && evt.eventType === 'up') {
+        // console.log(evt);
+      } else if (evt && evt.eventType === 'left') {
+        // console.log(evt);
+      } else if (evt && evt.eventType === 'down') {
+        // console.log(evt);
+      }
+    });
   };
 
-  // useTVEventHandler(myTVEventHandler);
+  const _disableTVEventHandler = () => {
+    if (_tvEventHandler) {
+      _tvEventHandler.disable();
+    }
+  }
 
-  // const _enableTVEventHandler = () => {
-  //   _tvEventHandler = new TVEventHandler();
-  //   _tvEventHandler.enable(this, function (cmp, evt) {
-  //     if (evt && evt.eventType === 'right') {
-  //       cmp.setState({ board: cmp.state.board.move(2) });
-  //     } else if (evt && evt.eventType === 'up') {
-  //       cmp.setState({ board: cmp.state.board.move(1) });
-  //     } else if (evt && evt.eventType === 'left') {
-  //       cmp.setState({ board: cmp.state.board.move(0) });
-  //     } else if (evt && evt.eventType === 'down') {
-  //       cmp.setState({ board: cmp.state.board.move(3) });
-  //     } else if (evt && evt.eventType === 'playPause') {
-  //       cmp.restartGame();
-  //     }
-  //   });
-  // }
+  const retreiveUserData = async () => {
+    api.retreiveUserData()
+  }
 
-  // _disableTVEventHandler = () => {
-  //   if (_tvEventHandler) {
-  //     _tvEventHandler.disable();
-  //     set_tvEventHandler(null);
-  //   }
-  // }
+  const getFromStorage = async (name) => {
+    return RNSecureStorage.get(name).then((value) => {
+      return {status: true,  err: null, value}
+    }).catch(async (err) => {
+      return {status: false, value: null, err}
+    })
+  }
+
+  const setInStorage = async (name,value) => {
+    return RNSecureStorage.set(name, value, { accessible: ACCESSIBLE.WHEN_UNLOCKED }).then((value) => {
+      return {status: true,  err: null, value}
+    }).catch(async (err) => {
+      return {status: false, value: null, err}
+    })
+  }
+
+  const getDeviceId = async () => {
+    var tempDeviceIDRes = await getFromStorage("tempDeviceID");
+    var deviceIDRes = await getFromStorage("deviceID");
+    console.log("tempDeviceIDRes: ", tempDeviceIDRes);
+    console.log("deviceIDRes: ", deviceIDRes);
+    if(!tempDeviceIDRes.status && !deviceIDRes.status){
+      var newDt = await api.generateDeviceID();
+      console.log("generating new: ", newDt);
+      setTempDeviceID(newDt.tempDeviceID);
+      setdeviceID(newDt.deviceID);
+      setInStorage("tempDeviceID", JSON.stringify(newDt.tempDeviceID));
+      setInStorage("deviceID", JSON.stringify(newDt.deviceID));
+    } else {
+      setTempDeviceID(JSON.parse(tempDeviceIDRes.value));
+      setdeviceID(JSON.parse(deviceIDRes.value));
+      console.log("Calling api: ", )
+      var userData = await api.retreiveUserData({deviceID: JSON.parse(deviceIDRes.value)});
+      console.log("userData: ", userData.data);
+      if(userData.data.status){
+        setUser(userData.data.data);
+      } else {
+
+      }
+    }
+
+    
+  }
+
+  const getDeviceInfo = async () => {
+    var deviceInfo = await getMacAddress();
+    var deviceUniqueId = await getUniqueId();
+    // console.log("deviceInfo: ", deviceInfo);
+    // console.log("deviceUniqueId: ", deviceUniqueId);
+  }
 
   const _onNavigationStateChange = (webViewState) => {
     console.log("state changed");
-    // console.log("New URI: ", webViewState);
-    // if (webViewState.url.indexOf('pay') > -1) {
-    //   webview.stopLoading();
-    //   webview.goBack();
-    // Linking.openURL(webViewState.url);
-    // }
   }
 
   _handleMessage = ({ nativeEvent: { data } }) => {
@@ -232,18 +177,6 @@ window.webViewBridge.send('Pay', window.location.href, function(res) {
     if (dt.targetFunc == 'login') {
       var d = dt.data
       setCredentials(d);
-      // RNSecureStorage.exists("uc").then((r) => {
-      //   if (r) {
-      //     setMsg('Update saved credentials?');
-      //     setShowCSaveModal(true);
-      //   } else {
-      //     setMsg('Would you like to store your Credentials on this device?');
-      //     setShowCSaveModal(true);
-      //   }
-      // }).catch((err) => {
-      //   setMsg('Would you like to store your Credentials on this device?');
-      //   setShowCSaveModal(true);
-      // });
       saveCredential(d)
     }
 
@@ -274,55 +207,81 @@ window.webViewBridge.send('Pay', window.location.href, function(res) {
       });
   }
 
-  return (
-    <>
-    <SafeAreaView><DoubleTapToClose webview={webview} /></SafeAreaView>
-      {!isLoading ? (
-        <WebView
-          source={{ uri: url }}
-          ref={ref => (setWebview(ref))}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-          useWebkit={false}
-          javaScriptEnabledAndroid={true}
-          allowsFullscreenVideo={true}
-          injectedJavaScript={SCRIPT}
-          // onShouldStartLoadWithRequest={_onShouldStartLoadWithRequest}
-          onNavigationStateChange={_onNavigationStateChange}
-          onMessage={_handleMessage}
-        />
-      ) : <ActivityIndicator size="large" color="#b5a642" />}
-      <View style={styles.modalBody}>
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={showCSaveModal}
-          onRequestClose={() => {
-            // Alert.alert("Modal has been closed.");
-          }}>
-          <View style={styles.centeredView}>
-            <View style={styles.modalView}>
-              <Text style={styles.modalText}>{msg}</Text>
-              <View style={styles.action}>
-                <TouchableHighlight
-                  style={{ ...styles.openButton, backgroundColor: "#8b0e04" }}
-                  onPress={saveCredential}>
-                  <Text style={styles.textStyle}>Yes</Text>
-                </TouchableHighlight>
+  const getMovieList = async () => {
+    var lastUpdate =  await getFromStorage('lastUpdate');
+    var date = '01/01/2021';
+    var todayDate = new Date().toISOString().split('T')[0];
+    if(lastUpdate.status){
+      date = lastUpdate.value;
+    }
 
-                <TouchableHighlight
-                  style={{ ...styles.closeButton, backgroundColor: "#b5a642" }}
-                  onPress={() => {
-                    setShowCSaveModal(false)
-                  }}>
-                  <Text style={styles.textStyle}>No, Thanks</Text>
-                </TouchableHighlight>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      </View>
-    </>
+    var hasNewDt = await api.hasNewMovie({date});
+    var hasNew = true;
+    if(hasNewDt.status){
+      hasNew = hasNewDt.hasNew;
+    }
+
+    var movieListDt = await getFromStorage("movieList");
+    var movieList = {};
+
+    if(movieListDt.status){
+      movieList = JSON.parse(movieListDt.value)
+    }
+
+    if(hasNew || !movieList.allMedia){
+      console.log("retreiving from db");
+      var res = await api.getMovieList();
+  
+      if (res && res.data && res.data.status) {
+        setAllMedia(res.data.media.allMedia);
+        setSubscriptionMedia(res.data.media.subscriptionMedia);
+        setRomanceMedia(res.data.media.romanceMedia);
+        setComedyMedia(res.data.media.comedyMedia);
+        setActionMedia(res.data.media.actionMedia);
+        setDramaMedia(res.data.media.dramaMedia);
+        setMysteryMedia(res.data.media.mysteryMedia);
+        setInStorage("movieList", JSON.stringify(res.data.media));
+        setInStorage("lastUpdate", JSON.stringify(todayDate));
+        setLoading(false);
+      }
+    } else if(movieList.allMedia) {
+      console.log("retreiving from memory");
+      setAllMedia(movieList.allMedia);
+      setSubscriptionMedia(movieList.subscriptionMedia);
+      setRomanceMedia(movieList.romanceMedia);
+      setComedyMedia(movieList.comedyMedia);
+      setActionMedia(movieList.actionMedia);
+      setDramaMedia(movieList.dramaMedia);
+      setMysteryMedia(movieList.mysteryMedia);
+      setLoading(false);
+    }
+  }
+
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{
+        headerShown: false
+      }}>
+        
+        <Stack.Screen name="Login">
+          {props => (!user ? (<Login {...props} setVideoUrl={setVideoUrl} videoUrl={videoUrl} getDeviceId={getDeviceId} tempDeviceID={tempDeviceID} deviceID={deviceID} user={user} setUser={setUser} setSelectedMedia={setSelectedMedia} selectedMedia={selectedMedia} loading={loading} allMedia={allMedia} subscriptionMedia={subscriptionMedia} romanceMedia={romanceMedia} comedyMedia={comedyMedia} actionMedia={actionMedia} dramaMedia={dramaMedia} mysteryMedia={mysteryMedia} />) : (<Home {...props} setVideoUrl={setVideoUrl} videoUrl={videoUrl} getDeviceId={getDeviceId} tempDeviceID={tempDeviceID} deviceID={deviceID} user={user} setUser={setUser} setSelectedMedia={setSelectedMedia} selectedMedia={selectedMedia} loading={loading} allMedia={allMedia} subscriptionMedia={subscriptionMedia} romanceMedia={romanceMedia} comedyMedia={comedyMedia} actionMedia={actionMedia} dramaMedia={dramaMedia} mysteryMedia={mysteryMedia} />))}
+        </Stack.Screen>
+        <Stack.Screen name="Home">
+          {props => <Home {...props} setVideoUrl={setVideoUrl} videoUrl={videoUrl} getDeviceId={getDeviceId} tempDeviceID={tempDeviceID} deviceID={deviceID} user={user} setUser={setUser} setSelectedMedia={setSelectedMedia} selectedMedia={selectedMedia} loading={loading} allMedia={allMedia} subscriptionMedia={subscriptionMedia} romanceMedia={romanceMedia} comedyMedia={comedyMedia} actionMedia={actionMedia} dramaMedia={dramaMedia} mysteryMedia={mysteryMedia} />}
+        </Stack.Screen>
+        <Stack.Screen name="Details">
+          {props => <Details {...props} setVideoUrl={setVideoUrl} videoUrl={videoUrl} getDeviceId={getDeviceId} tempDeviceID={tempDeviceID} deviceID={deviceID} user={user} setUser={setUser} setSelectedMedia={setSelectedMedia} selectedMedia={selectedMedia} loading={loading} allMedia={allMedia} subscriptionMedia={subscriptionMedia} romanceMedia={romanceMedia} comedyMedia={comedyMedia} actionMedia={actionMedia} dramaMedia={dramaMedia} mysteryMedia={mysteryMedia} />}
+        </Stack.Screen>
+        <Stack.Screen name="VideoPlayer">
+          {props => <VideoPlayer {...props} setVideoUrl={setVideoUrl} url={videoUrl} getDeviceId={getDeviceId} tempDeviceID={tempDeviceID} deviceID={deviceID} user={user} setUser={setUser} setSelectedMedia={setSelectedMedia} selectedMedia={selectedMedia} loading={loading} allMedia={allMedia} subscriptionMedia={subscriptionMedia} romanceMedia={romanceMedia} comedyMedia={comedyMedia} actionMedia={actionMedia} dramaMedia={dramaMedia} mysteryMedia={mysteryMedia} />}
+        </Stack.Screen>
+        <Stack.Screen name="ReactVideoPlayer">
+          {props => <ReactVideoPlayer {...props} setVideoUrl={setVideoUrl} url={videoUrl} getDeviceId={getDeviceId} tempDeviceID={tempDeviceID} deviceID={deviceID} user={user} setUser={setUser} setSelectedMedia={setSelectedMedia} selectedMedia={selectedMedia} loading={loading} allMedia={allMedia} subscriptionMedia={subscriptionMedia} romanceMedia={romanceMedia} comedyMedia={comedyMedia} actionMedia={actionMedia} dramaMedia={dramaMedia} mysteryMedia={mysteryMedia} />}
+        </Stack.Screen>
+        
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 };
 

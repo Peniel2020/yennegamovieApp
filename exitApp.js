@@ -11,7 +11,7 @@ export const ExecuteOnlyOnAndroid = (props) => {
     }, 2000); // 2 seconds to tap second-time
 
     if (exitApp === 0) {
-        props.webview.goBack();
+        // props.webview.goBack();
       setExitApp(exitApp + 1);
 
       ToastAndroid.show(message, ToastAndroid.SHORT);
